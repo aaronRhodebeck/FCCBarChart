@@ -4,10 +4,8 @@ body {
 
 svg {
   display: block;
-  height: 100%;
-  width: calc(height * 4);
-  max-height: 100%;
-  max-width: 100%;
+  max-height: 80vh;
+  max-width: calc(80vh * 5/3);
   border-radius: 10px;
   background-color: rgba(200, 200, 210, 0.4);
   box-shadow: 2px 6px 8px rgba(50, 50, 50, 0.4), 2px -3px 10px rgba(50, 50, 50, 0.4),
@@ -16,9 +14,8 @@ svg {
 }
 
 #bar-chart {
-  width: 95vw;
   margin: auto;
-  padding: 10px;
+  padding: 20px;
 }
 
 .axis {
@@ -26,18 +23,60 @@ svg {
 }
 
 .axis path {
-  stroke: rgba(50, 50, 50, 0.8);
+  stroke: rgba(40, 40, 40, 0.9);
 }
 
 .tick line {
-  stroke: rgba(50, 50, 50, 0.8);
+  stroke: rgba(40, 40, 40, 0.9);
 }
 
 .tick text {
   stroke: rgba(50, 50, 50, 0);
-  fill: rgba(50, 50, 50, 0.8);
+  fill: rgba(40, 40, 40, 0.9);
 }
 
 .bar {
-  fill: rgb(100, 151, 177);
+  fill: rgb(65, 92, 105);
+}
+
+.bar:hover {
+  fill: rgb(26, 26, 109);
+}
+
+.horizontal-guidelines path {
+  stroke: rgba(50, 50, 50, 0.3);
+}
+
+.horizontal-guidelines line {
+  stroke: rgba(50, 50, 50, 0.2);
+}
+
+.tooltip {
+  background-color: rgba(200, 200, 210, 0.8);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 2px 6px 8px rgba(50, 50, 50, 0.4), 2px -3px 10px rgba(50, 50, 50, 0.4),
+    -2px 2px 10px rgba(50, 50, 50, 0.3);
+}
+
+.tooltip h3 {
+  margin: 3px;
+  font-size: 2.5vh;
+}
+
+.tooltip p {
+  text-align: right;
+  margin: 3px;
+  font-size: 1.8vh;
+}
+
+.left-label {
+  fill: rgba(40, 40, 40, 0.6);
+  font-family: Helvetica, sans-serif;
+  font-size: 10pt;
+}
+
+.data-reference {
+  font-size: 6pt;
+  fill: rgb(26, 26, 109);
 }

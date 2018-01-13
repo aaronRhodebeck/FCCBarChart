@@ -298,114 +298,144 @@ var data = {
 };
 //#endregion
 
-const makeBarChart = (appendToId, dataset, dataRange, name, configOptions = {}) => {
-  const height = 300;
-  const width = 400;
-  const paddingTop = 30;
-  const paddingLeft = 50;
-  const paddingRight = 15;
+//#region Shared variables
+const height = 300;
+const width = 500;
+const paddingTop = 20;
+const paddingRight = 15;
+const paddingBottom = 40;
+const paddingLeft = 45;
+//#endregion Shared Variables
 
-  let svg = createSVGElement(appendToId, name, height, width);
-  let scaleY = createLinearScale(d3.min(dataset), d3.max(dataset), height, paddingTop);
-  // dataset.forEach(d => console.log(scaleY(d)));
-  // console.log(scaleY(d3.min(dataset)), scaleY(d3.max(dataset)));
-  let scaleX = createTimeScale(
-    d3.min(dataRange),
-    d3.max(dataRange),
-    width,
-    paddingLeft,
-    paddingRight
-  );
-  addBarsToGraph(
-    svg,
-    { height, width, paddingTop },
-    dataset,
-    paddingTop,
-    paddingLeft,
-    paddingRight,
-    scaleY
-  );
-  addYAxisToGraph(svg, scaleY, paddingLeft);
-  addXAxisToGraph(svg, scaleX, height, paddingTop);
-};
+//#region Create SVG Element
+const barChart = d3
+  .select("#bar-chart")
+  .append("svg")
+  .attr("viewBox", `0 0 ${width} ${height}`)
+  .attr("preserveAspectRatio", "xMinYMin")
+  .attr("class", "chart");
+//#endregion
 
-let totalsArray = [];
-data.data.forEach(arr => totalsArray.push(arr[1]));
-const parseTime = d3.timeParse("%Y-%m-%d");
-let datesArray = [];
-data.data.forEach(arr => datesArray.push(parseTime(arr[0])));
-makeBarChart("bar-chart", totalsArray, datesArray, "sample");
+//#region Create the scale for the data
+const parseDate = dateString => new Date(dateString);
+const minDate = parseDate(d3.min(data.data, d => d[0]));
+const maxDate = parseDate(d3.max(data.data, d => d[0]));
 
-//#region Helper methods
-function createSVGElement(appendToId, name, height, width, classNames = ["barChart"]) {
-  return d3
-    .select(`#${appendToId}`)
-    .append("svg")
-    .attr("id", `barChart-${name}`)
-    .attr("preserveAspectRatio", "xMidYMid meet")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("class", classNames.join(" "));
+const scaleX = d3
+  .scaleTime()
+  .domain([minDate, maxDate])
+  .range([paddingLeft, width - paddingRight]); //Extra padding for the scale to fit
+
+const minGDPValue = d3.min(data.data, d => d[1]);
+const maxGDPValue = d3.max(data.data, d => d[1]);
+
+const scaleY = d3
+  .scaleLinear()
+  .domain([minGDPValue * 0.85, maxGDPValue * 1.05])
+  .range([height - paddingBottom, paddingTop]); //Reversed to start bars from the bottom
+//#endregion
+
+//#region Add axes to chart
+const xAxis = d3.axisBottom(scaleX);
+const yAxis = d3.axisLeft(scaleY);
+
+barChart
+  .append("g")
+  .attr("transform", `translate(0, ${height - paddingBottom})`)
+  .attr("class", "axis")
+  .call(xAxis);
+
+barChart
+  .append("g")
+  .attr("transform", `translate(${paddingLeft}, 0)`)
+  .attr("class", "axis")
+  .call(yAxis);
+
+// Add full length ticks
+const horizontalGrid = yAxis.tickSize(width - paddingLeft - paddingRight).tickFormat("");
+barChart
+  .append("g")
+  .attr("class", "horizontal-guidelines")
+  .attr("transform", `translate(${width - paddingRight}, 0)`)
+  .call(horizontalGrid);
+//#endregion
+
+//#region Add labels to chart
+const leftLabel = barChart
+  .append("text")
+  .text("GDP in billions of USD")
+  .attr("transform", "rotate(90 15 40)")
+  .attr("class", "left-label");
+
+const dataReference = barChart
+  .append("a")
+  .attr("xlink:href", "http://www.bea.gov/national/pdf/nipaguid.pdf")
+  .append("text")
+  .text("Data provided by St. Louis Federal Reserve")
+  .attr("transform", "translate(310, 289)")
+  .attr("class", "data-reference");
+//#endregion
+
+//#region Add bars to chart
+const barWidth = (width - (paddingLeft + paddingRight)) / data.data.length;
+const barPadding = barWidth * 0.05;
+
+const bars = barChart
+  .selectAll("rect")
+  .data(data.data)
+  .enter()
+  .append("rect")
+  .attr("class", "bar")
+  .attr("width", barWidth - barPadding)
+  .attr("x", (d, i) => i * barWidth + paddingLeft + 1)
+  .attr("height", d => scaleY(0) - scaleY(d[1]))
+  .attr("y", d => scaleY(d[1]) - 2.7); // Off by 2.7, no idea why
+
+//#endregion
+
+//#region Add tooltip to bars
+const tooltip = d3
+  .select("body")
+  .append("div")
+  .attr("class", "tooltip")
+  .style("position", "absolute")
+  .style("visibility", "hidden");
+const tooltipGDP = tooltip.append("h3").attr("class", "tip-gdp");
+const tooltipDate = tooltip.append("p").attr("class", "tip-date");
+
+function prettyPrintDate(dateString) {
+  const dateArray = dateString.split("-");
+  let year = dateArray[0];
+  let quarter = convertToQuarter(dateArray[1]);
+  return `${quarter}, ${year}`;
+
+  function convertToQuarter(month) {
+    switch (month) {
+      case "01":
+        return "1st Quarter";
+      case "04":
+        return "2nd Quarter";
+      case "07":
+        return "3rd Quarter";
+      case "10":
+        return "4th Quarter";
+      default:
+        return month;
+    }
+  }
 }
 
-function addBarsToGraph(
-  svgElement,
-  svgProps,
-  dataset,
-  paddingTop,
-  paddingLeft,
-  paddingRight,
-  scaleY
-) {
-  const barWidthWithMargin =
-    (svgProps.width - paddingLeft - paddingRight) / dataset.length;
-  const margin = barWidthWithMargin * 0.15;
-  const barWidth = barWidthWithMargin - margin;
+bars.on("mouseover", (d, i) => {
+  tooltip.style("visibility", "visible").style("left", event.pageX - 40 + "px");
+  tooltipDate.text(prettyPrintDate(d[0]));
+  tooltipGDP.text("$" + d[1].toLocaleString() + " Billion");
+});
 
-  return svgElement
-    .selectAll("rect")
-    .data(dataset)
-    .enter()
-    .append("rect")
-    .attr("class", "bar")
-    .attr("width", barWidth)
-    .attr("height", d => svgProps.height - scaleY(d) - paddingTop)
-    .attr("x", (d, i) => i * (barWidth + margin) + paddingLeft)
-    .attr("y", d => scaleY(d));
-}
+bars.on("mousemove", d => {
+  tooltip.style("top", event.pageY - 120 + "px");
+});
 
-function createLinearScale(minInput, maxInput, maxSVGCoord, padding) {
-  return d3
-    .scaleLinear()
-    .domain([minInput - minInput * 0.5, maxInput + maxInput * 0.1])
-    .range([maxSVGCoord - padding, 0 + padding]);
-}
-
-function createTimeScale(minDate, maxDate, maxSVGCoord, paddingLeft, paddingRight) {
-  return d3
-    .scaleTime()
-    .domain([minDate, maxDate])
-    .range([0 + paddingLeft, maxSVGCoord - paddingRight]);
-}
-
-function addYAxisToGraph(svgElement, scaleY, padding) {
-  const yAxis = d3.axisLeft().scale(scaleY);
-  return svgElement
-    .append("g")
-    .call(yAxis)
-    .attr("transform", `translate(${padding}, 0)`)
-    .attr("class", "axis y-axis");
-}
-
-function addXAxisToGraph(svgElement, scaleX, height, padding) {
-  const xAxis = d3
-    .axisBottom()
-    .scale(scaleX)
-    .ticks(5);
-  return svgElement
-    .append("g")
-    .call(xAxis)
-    .attr("transform", `translate(0, ${height - padding})`)
-    .attr("class", "axis x-axis");
-}
-
+bars.on("mouseout", d => {
+  tooltip.style("visibility", "hidden");
+});
 //#endregion

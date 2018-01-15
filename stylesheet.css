@@ -2,6 +2,20 @@ body {
   background-color: rgb(121, 180, 121);
 }
 
+h1 {
+  text-align: center;
+  margin-bottom: 0px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(40, 40, 40);
+}
+h2 {
+  text-align: center;
+  font-size: 11pt;
+  margin: 3px;
+  font-family: "Segoe UI", Tahoma, Verdana, sans-serif;
+  color: rgb(40, 40, 40);
+}
+
 svg {
   display: block;
   max-height: 80vh;
